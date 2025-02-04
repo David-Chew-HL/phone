@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scam Call Detector</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f0f0f0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .phone {
+            width: 320px;
+            height: 600px;
+            background: white;
+            border-radius: 30px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+
+        .screen {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg, #1a1a1a, #2a2a2a);
+            padding: 20px;
+            box-sizing: border-box;
+            color: white;
+        }
+
+        .caller-info {
+            text-align: center;
+            padding: 40px 20px;
+        }
+
+        .caller-number {
+            font-size: 24px;
+            margin: 10px 0;
+        }
+
+        .incoming-animation {
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .call-buttons {
+            position: absolute;
+            bottom: 40px;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+        }
+
+        .btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-answer {
+            background: #4CAF50;
+        }
+
+        .btn-hangup {
+            background: #f44336;
+        }
+
+        .transcription {
+            position: absolute;
+            bottom: 120px;
+            left: 20px;
+            right: 20px;
+            background: rgba(0,0,0,0.8);
+            padding: 15px;
+            border-radius: 10px;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.3s ease;
+        }
+
+        .transcription.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .warning {
+            position: absolute;
+            top: 50%;
+            left: 20px;
+            right: 20px;
+            background: #ff4444;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            transform: translateY(-50%) scale(0);
+            transition: all 0.3s ease;
+            animation: blink 1s infinite;
+        }
+
+        .warning.show {
+            transform: translateY(-50%) scale(1);
+        }
+
+        @keyframes blink {
+            0% { opacity: 1; }
+            50% { opacity: 0.8; }
+            100% { opacity: 1; }
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="phone">
+        <div class="screen">
+            <div id="incoming-call">
+                <div class="caller-info incoming-animation">
+                    <div>📞 Incoming Call</div>
+                    <div class="caller-number">Unknown Number</div>
+                    <div>+1 (555) 0123-4567</div>
+                </div>
+                <div class="call-buttons">
+                    <button class="btn btn-answer" onclick="answerCall()">📞</button>
+                </div>
+            </div>
+
+            <div id="on-call" class="hidden">
+                <div class="caller-info">
+                    <div>📞 On Call</div>
+                    <div class="caller-number">Unknown Number</div>
+                    <div>+1 (555) 0123-4567</div>
+                </div>
+                <div class="transcription" id="transcription"></div>
+                <div class="warning" id="warning">
+                    ⚠️ SCAM ALERT!<br><br>
+                    This call matches known scam patterns.<br>
+                    Do not transfer any money!
+                </div>
+                <div class="call-buttons">
+                    <button class="btn btn-hangup" onclick="endCall()">📴</button>
+                </div>
+            </div>
+
+            <div id="call-ended" class="hidden">
+                <div class="caller-info">
+                    <div>✅ Call Ended</div>
+                    <div>Scam attempt blocked</div>
+                </div>
+                <div class="call-buttons">
+                    <button class="btn btn-answer" onclick="resetDemo()">🔄</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <audio id="alertSound" src="data:audio/mpeg;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA/+M4wAAAAAAAAAAAAEluZm8AAAAPAAAAAwAAAbAAsFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFiwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCw////////////////AAAAAExhdmM1OC4xMwAAAAAAAAAAAAAAACQCgAAAAAAAAAGwzyd5ZAAAAAAAAAAAAAAAAAAAAAAA" type="audio/mpeg"></audio>
+
+    <script>
+        const transcriptionText = [
+            "Hello, I'm calling from your bank's security department.",
+            "We've detected suspicious activity on your account.",
+            "For your safety, please transfer your funds to our secure account: XX-XXXX-XXXX"
+        ];
+
+        function answerCall() {
+            document.getElementById('incoming-call').classList.add('hidden');
+            document.getElementById('on-call').classList.remove('hidden');
+            
+            // Show transcription gradually
+            const transcription = document.getElementById('transcription');
+            transcription.classList.add('show');
+            
+            let index = 0;
+            const interval = setInterval(() => {
+                if (index < transcriptionText.length) {
+                    transcription.innerHTML += (index > 0 ? '<br><br>' : '') + 
+                        'Caller: ' + transcriptionText[index];
+                    index++;
+                } else {
+                    clearInterval(interval);
+                    // Show warning after transcription
+                    setTimeout(() => {
+                        document.getElementById('warning').classList.add('show');
+                        document.getElementById('alertSound').play();
+                    }, 1000);
+                }
+            }, 2000);
+        }
+
+        function endCall() {
+            document.getElementById('on-call').classList.add('hidden');
+            document.getElementById('call-ended').classList.remove('hidden');
+        }
+
+        function resetDemo() {
+            document.getElementById('call-ended').classList.add('hidden');
+            document.getElementById('incoming-call').classList.remove('hidden');
+            document.getElementById('transcription').innerHTML = '';
+            document.getElementById('warning').classList.remove('show');
+            document.getElementById('transcription').classList.remove('show');
+        }
+    </script>
+</body>
+</html>
