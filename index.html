@@ -174,7 +174,15 @@
         </div>
     </div>
 
-    <audio id="alertSound" src="data:audio/mpeg;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA/+M4wAAAAAAAAAAAAEluZm8AAAAPAAAAAwAAAbAAsFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFiwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCw////////////////AAAAAExhdmM1OC4xMwAAAAAAAAAAAAAAACQCgAAAAAAAAAGwzyd5ZAAAAAAAAAAAAAAAAAAAAAAA" type="audio/mpeg"></audio>
+    <audio id="phoneRingSound" loop>
+        <source src="phone-ring.mp3" type="audio/mpeg">
+        <source src="phone-ring.wav" type="audio/wav">
+    </audio>
+
+    <audio id="alertSound">
+        <source src="alert.mp3" type="audio/mpeg">
+        <source src="alert.wav" type="audio/wav">
+    </audio>
 
     <script>
         const transcriptionText = [
@@ -183,11 +191,25 @@
             "For your safety, please transfer your funds to our secure account: XX-XXXX-XXXX"
         ];
 
+        function startRinging() {
+            const ringSound = document.getElementById('phoneRingSound');
+            ringSound.currentTime = 0;
+            ringSound.play().catch(error => {
+                console.log('Ringing sound play failed:', error);
+            });
+        }
+
+        function stopRinging() {
+            const ringSound = document.getElementById('phoneRingSound');
+            ringSound.pause();
+            ringSound.currentTime = 0;
+        }
+
         function answerCall() {
+            stopRinging();
             document.getElementById('incoming-call').classList.add('hidden');
             document.getElementById('on-call').classList.remove('hidden');
             
-            // Show transcription gradually
             const transcription = document.getElementById('transcription');
             transcription.classList.add('show');
             
@@ -199,13 +221,21 @@
                     index++;
                 } else {
                     clearInterval(interval);
-                    // Show warning after transcription
                     setTimeout(() => {
                         document.getElementById('warning').classList.add('show');
-                        document.getElementById('alertSound').play();
-                    }, 1000);
+                        playAlertSound();
+                    }, 500);
                 }
-            }, 2000);
+            }, 1000);
+        }
+
+        function playAlertSound() {
+            const alertSound = document.getElementById('alertSound');
+            alertSound.play().catch(error => {
+                console.log('Audio play failed:', error);
+                alertSound.muted = true;
+                alertSound.play();
+            });
         }
 
         function endCall() {
@@ -219,7 +249,22 @@
             document.getElementById('transcription').innerHTML = '';
             document.getElementById('warning').classList.remove('show');
             document.getElementById('transcription').classList.remove('show');
+            startRinging();
         }
+
+        function initDemo() {
+            startRinging();
+        }
+
+        window.onload = initDemo;
+
+        // Attempt to enable audio interaction on mobile
+        document.addEventListener('touchstart', function() {
+            const alertSound = document.getElementById('alertSound');
+            const ringSound = document.getElementById('phoneRingSound');
+            alertSound.load();
+            ringSound.load();
+        }, false);
     </script>
 </body>
 </html>
