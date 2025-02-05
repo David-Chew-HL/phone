@@ -231,6 +231,7 @@
 
         function playAlertSound() {
             const alertSound = document.getElementById('alertSound');
+            alertSound.volume = 0.5;
             alertSound.play().catch(error => {
                 console.log('Audio play failed:', error);
                 alertSound.muted = true;
